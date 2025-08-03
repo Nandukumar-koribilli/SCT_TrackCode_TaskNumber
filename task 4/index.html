@@ -1,0 +1,284 @@
+<script type="text/javascript">
+        var gk_isXlsx = false;
+        var gk_xlsxFileLookup = {};
+        var gk_fileData = {};
+        function filledCell(cell) {
+          return cell !== '' && cell != null;
+        }
+        function loadFileData(filename) {
+        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
+            try {
+                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
+                var firstSheetName = workbook.SheetNames[0];
+                var worksheet = workbook.Sheets[firstSheetName];
+
+                // Convert sheet to JSON to filter blank rows
+                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
+                // Filter out blank rows (rows where all cells are empty, null, or undefined)
+                var filteredData = jsonData.filter(row => row.some(filledCell));
+
+                // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
+                var headerRowIndex = filteredData.findIndex((row, index) =>
+                  row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
+                );
+                // Fallback
+                if (headerRowIndex === -1 || headerRowIndex > 25) {
+                  headerRowIndex = 0;
+                }
+
+                // Convert filtered JSON back to CSV
+                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
+                csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
+                return csv;
+            } catch (e) {
+                console.error(e);
+                return "";
+            }
+        }
+        return gk_fileData[filename] || "";
+        }
+        </script><!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>To Do List</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #1e3c72, #2a5298);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            color: #fff;
+        }
+        .container {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+            width: 350px;
+            text-align: center;
+        }
+        h1 {
+            font-size: 28px;
+            margin-bottom: 20px;
+        }
+        .input-container {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        input {
+            padding: 10px;
+            border: none;
+            border-radius: 25px;
+            font-size: 16px;
+            outline: none;
+            background: #f3f4f6;
+            color: #1e3c72;
+            flex: 1;
+            min-width: 0;
+        }
+        #taskDateTime {
+            flex: 0 0 150px;
+        }
+        button#addButton {
+            padding: 10px 20px;
+            background: #00eaff;
+            color: #1e3c72;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button#addButton:hover {
+            background: #00b4cc;
+        }
+        ul {
+            list-style: none;
+            padding: 0;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        li {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 15px;
+            margin-bottom: 10px;
+            border-radius: 25px;
+            font-size: 16px;
+            transition: background-color 0.3s;
+        }
+        li.incomplete {
+            background: #3b82f6;
+        }
+        li.complete {
+            background: #6b7280;
+            text-decoration: line-through;
+        }
+        li span {
+            flex: 1;
+        }
+        li .task-controls {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        li button {
+            background: #f472b6;
+            border: none;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            color: white;
+            font-size: 16px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        li button:hover {
+            background: #ec4899;
+        }
+        li input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+        }
+        .date-time {
+            font-size: 12px;
+            color: #d1d5db;
+        }
+        @media (max-width: 400px) {
+            .container {
+                width: 90%;
+            }
+            .input-container {
+                flex-direction: column;
+                gap: 5px;
+            }
+            input, button#addButton {
+                width: 100%;
+            }
+            #taskDateTime {
+                flex: 0 0 100%;
+            }
+            ul {
+                max-height: 250px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>To Do List</h1>
+        <div class="input-container">
+            <input type="text" id="taskInput" placeholder="Add a new task...">
+            <input type="datetime-local" id="taskDateTime">
+            <button id="addButton">Add</button>
+        </div>
+        <ul id="taskList"></ul>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const taskInput = document.getElementById('taskInput');
+            const taskDateTime = document.getElementById('taskDateTime');
+            const addButton = document.getElementById('addButton');
+            const taskList = document.getElementById('taskList');
+
+            loadTasks();
+
+            addButton.addEventListener('click', addTask);
+            taskInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') addTask();
+            });
+
+            function addTask() {
+                const taskText = taskInput.value.trim();
+                const taskDate = taskDateTime.value;
+
+                if (taskText === '') {
+                    alert('Please enter a task!');
+                    return;
+                }
+
+                const task = {
+                    text: taskText,
+                    dateTime: taskDate,
+                    completed: false
+                };
+
+                saveTask(task);
+                addTaskToDOM(task);
+                taskInput.value = '';
+                taskDateTime.value = '';
+            }
+
+            function addTaskToDOM(task) {
+                const li = document.createElement('li');
+                li.className = task.completed ? 'complete' : 'incomplete';
+
+                li.innerHTML = `
+                    <span>${task.text}</span>
+                    <div class="task-controls">
+                        <span class="date-time">${task.dateTime ? new Date(task.dateTime).toLocaleString() : ''}</span>
+                        <button>🗑️</button>
+                        <input type="checkbox" ${task.completed ? 'checked' : ''}>
+                    </div>
+                `;
+                taskList.appendChild(li);
+
+                const checkbox = li.querySelector('input[type="checkbox"]');
+                checkbox.addEventListener('change', () => {
+                    task.completed = checkbox.checked;
+                    li.className = task.completed ? 'complete' : 'incomplete';
+                    updateTask(task);
+                });
+
+                li.querySelector('button').addEventListener('click', () => {
+                    taskList.removeChild(li);
+                    removeTask(task);
+                });
+            }
+
+            function saveTask(task) {
+                let tasks = getTasks();
+                tasks.push(task);
+                localStorage.setItem('tasks', JSON.stringify(tasks));
+            }
+
+            function updateTask(taskToUpdate) {
+                let tasks = getTasks();
+                tasks = tasks.map(task =>
+                    task.text === taskToUpdate.text && task.dateTime === taskToUpdate.dateTime
+                        ? { ...task, completed: taskToUpdate.completed }
+                        : task
+                );
+                localStorage.setItem('tasks', JSON.stringify(tasks));
+            }
+
+            function removeTask(taskToRemove) {
+                let tasks = getTasks();
+                tasks = tasks.filter(task => task.text !== taskToRemove.text || task.dateTime !== taskToRemove.dateTime);
+                localStorage.setItem('tasks', JSON.stringify(tasks));
+            }
+
+            function loadTasks() {
+                const tasks = getTasks();
+                tasks.forEach(task => addTaskToDOM(task));
+            }
+
+            function getTasks() {
+                const tasks = localStorage.getItem('tasks');
+                return tasks ? JSON.parse(tasks) : [];
+            }
+        });
+    </script>
+</body>
+</html>
