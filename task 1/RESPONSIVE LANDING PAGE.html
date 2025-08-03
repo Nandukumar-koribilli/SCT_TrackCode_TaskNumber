@@ -1,0 +1,191 @@
+<script type="text/javascript">
+        var gk_isXlsx = false;
+        var gk_xlsxFileLookup = {};
+        var gk_fileData = {};
+        function filledCell(cell) {
+          return cell !== '' && cell != null;
+        }
+        function loadFileData(filename) {
+        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
+            try {
+                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
+                var firstSheetName = workbook.SheetNames[0];
+                var worksheet = workbook.Sheets[firstSheetName];
+
+                // Convert sheet to JSON to filter blank rows
+                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
+                // Filter out blank rows (rows where all cells are empty, null, or undefined)
+                var filteredData = jsonData.filter(row => row.some(filledCell));
+
+                // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
+                var headerRowIndex = filteredData.findIndex((row, index) =>
+                  row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
+                );
+                // Fallback
+                if (headerRowIndex === -1 || headerRowIndex > 25) {
+                  headerRowIndex = 0;
+                }
+
+                // Convert filtered JSON back to CSV
+                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
+                csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
+                return csv;
+            } catch (e) {
+                console.error(e);
+                return "";
+            }
+        }
+        return gk_fileData[filename] || "";
+        }
+        </script><!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Resume - Nandu Kumar Koribilli</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: linear-gradient(135deg, #1a1a1a, #2c2c2c);
+      color: #e0e0e0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      line-height: 1.6;
+    }
+    nav {
+      position: fixed;
+      top: 0;
+      width: 100%;
+      background: rgba(44, 44, 44, 0.9);
+      padding: 1rem;
+      transition: background 0.3s;
+      backdrop-filter: blur(5px);
+    }
+    nav.scrolled { background: rgba(60, 60, 60, 0.9); }
+    nav ul {
+      list-style: none;
+      display: flex;
+      justify-content: center;
+      gap: 2rem;
+    }
+    nav ul li a {
+      color: #bbb;
+      text-decoration: none;
+      padding: 0.5rem 1rem;
+      transition: color 0.3s, transform 0.2s;
+    }
+    nav ul li a:hover {
+      color: #ffcc00;
+      transform: scale(1.1);
+    }
+    section {
+      padding-top: 80px;
+      padding: 2rem;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    .content {
+      max-width: 900px;
+      background: rgba(0, 0, 0, 0.7);
+      padding: 2rem;
+      border-radius: 15px;
+      box-shadow: 0 0 20px rgba(255, 204, 0, 0.1);
+    }
+    h1 {
+      color: #fff;
+      font-size: 3rem;
+      text-align: center;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      margin-bottom: 1.5rem;
+      text-shadow: 0 0 10px #ffcc00;
+    }
+    h2 {
+      color: #ccc;
+      font-size: 2rem;
+      margin-top: 2rem;
+      border-bottom: 2px solid #ffcc00;
+      padding-bottom: 0.5rem;
+    }
+    p {
+      font-size: 1.2rem;
+      margin: 0.5rem 0;
+      line-height: 1.8;
+    }
+    .project, .achievement {
+      margin-left: 2rem;
+      position: relative;
+    }
+    .project::before, .achievement::before {
+      content: "★";
+      color: #ffcc00;
+      position: absolute;
+      left: -1.5rem;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    .content { animation: fadeIn 1s ease-in; }
+  </style>
+</head>
+<body>
+  <nav id="nav">
+    <ul>
+      <li><a href="#home">Home</a></li>
+      <li><a href="#about">About</a></li>
+      <li><a href="#contact">Contact</a></li>
+    </ul>
+  </nav>
+  <section id="home">
+    <div class="content">
+        <h1>Hello👋  </h1>
+        <h1>i am </h1>
+      <h1>Nandu Kumar Koribilli</h1>
+    </div>
+  </section>
+  <section id="about">
+    <div class="content">
+      <h2>Projects</h2>
+      <div class="project"><p><strong>Solar System Model</strong><br>Developed an interactive simulation using Python and OpenCV. Implemented realistic orbital mechanics for educational purposes.</p></div>
+      <div class="project"><p><strong>Crop Yield Predictor</strong><br>Built a Machine Learning model to forecast crop outcomes using TensorFlow and PyTorch. Integrated data analytics for improved predictions.</p></div>
+      <div class="project"><p><strong>IoT Application</strong><br>Developed an IoT-based Smart locking system using Arduino. Applied hardware and software integration skills.</p></div>
+      <h2>Achievements</h2>
+      <div class="achievement"><p>Certified in Artificial Intelligence by Programming Hub, March 31, 2021.</p></div>
+      <div class="achievement"><p>Completed 6-week Data Science BootCamp - From Analysing Data To Creating ML Models.</p></div>
+      <div class="achievement"><p>Completed Python Full Stack Intern at Millennium, May 29 - July 16, 2025.</p></div>
+      <div class="achievement"><p>Certified in Electronics and Hardware in vocational courses, 2020.</p></div>
+      <div class="achievement"><p>Certified in IoT by edX, Curtin University, 2024.</p></div>
+      <div class="achievement"><p>Certified in Full Stack Application Development by edX, IBM, 2024.</p></div>
+      <div class="achievement"><p>Certified in Python by Programming Hub, Google Developer, 2020.</p></div>
+      <div class="achievement"><p>Certified in C Language by Datapro Organization, 2025.</p></div>
+      <div class="achievement"><p>Completed PowerPoint Presentation on AI at Gayatri Vidy Parishad, 2023.</p></div>
+      <div class="achievement"><p>Participated in National Computer Day, 2025.</p></div>
+      <div class="achievement"><p>Volunteered for Street Cause, 2023.</p></div>
+      <div class="achievement"><p>Completed 3-day workshop on PCB Designing by Techbot Tutor Pvt. Ltd., 2023.</p></div>
+      <div class="achievement"><p>Completed 5-day workshop on English Grammar for Effective Writing Skills at Gayatri Vidy Parishad, May 2025.</p></div>
+      <div class="achievement"><p>Completed 5-day skill enhancement course in Arduino Programming, November 2024.</p></div>
+      <div class="achievement"><p>Awarded Certificate of Appreciation for participating in GVV Alumni Carnival, MVP Campus, March 2023.</p></div>
+      <h2>Strengths</h2>
+      <p>Proficient in leveraging AI tools and ML frameworks for innovative solutions.</p>
+      <p>Strong expertise in IoT, robotics, and embedded systems.</p>
+      <p>Adept at building responsive web applications and automation projects.</p>
+    </div>
+  </section>
+  <section id="contact">
+    <div class="content">
+      <h2>Contact</h2>
+      <p>nandukumar9980@gmail.com</p>
+    </div>
+  </section>
+
+  <script>
+    window.addEventListener('scroll', () => {
+      const nav = document.getElementById('nav');
+      if (window.scrollY > 50) nav.classList.add('scrolled');
+      else nav.classList.remove('scrolled');
+    });
+  </script>
+</body>
+</html>
